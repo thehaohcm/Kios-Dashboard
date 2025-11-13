@@ -93,11 +93,7 @@
 
         console.log("🚀 Prefetching dashboard data in background...");
 
-        const endpoints = [
-          "/market",
-          "/news",           // RSS feed tin tức Việt Nam
-          "/finance"         // RSS feed DowJones realtime finance
-        ];
+        const endpoints = ["/weather", "/news", "/market", "/finance"];
 
         // Gọi từng endpoint cách nhau 1 giây (nhẹ cho Raspberry Pi)
         endpoints.forEach((url, i) => {
