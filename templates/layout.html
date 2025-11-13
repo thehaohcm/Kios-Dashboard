@@ -15,8 +15,9 @@
   <link rel="preload" href="/static/img/weather/clear.png" as="image">
   <link rel="preload" href="/static/img/weather/cloud.png" as="image">
   <!-- prefetch cho những assets không cần ngay nhưng hữu ích -->
-  <link rel="prefetch" href="/crypto" as="document">
-  <link rel="prefetch" href="/gold" as="document">
+  <link rel="prefetch" href="/news" as="document">
+  <link rel="prefetch" href="/market" as="document">
+  <link rel="prefetch" href="/finance" as="document">
 </head>
 <body>
   <div id="app" class="slide-page">
@@ -32,7 +33,7 @@
 
   <script>
     // Danh sách trang
-    const pages = ["/weather", "/gold", "/crypto", "/stock", "/news", "/finance"];
+    const pages = ["/weather", "/news", "/market", "/finance"];
     let idx = 0;
     const pageDuration = 120000; // 2 phút
 
@@ -149,7 +150,7 @@
         console.log("🚀 Prefetching dashboard data in background...");
 
         const endpoints = [
-          "/stock",          // warm cache API tiềm năng cổ phiếu
+          "/market",
           "/news",           // RSS feed tin tức Việt Nam
           "/finance"         // RSS feed DowJones realtime finance
         ];

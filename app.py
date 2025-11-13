@@ -1,5 +1,5 @@
 from flask import Flask, render_template, jsonify
-import requests, json, os, time, threading, xml.etree.ElementTree as ET
+import requests, json, os, time, threading, xml.etree.ElementTree as ET, yfinance as yf
 
 app = Flask(__name__)
 
@@ -60,54 +60,75 @@ def clear_expired_cache():
 threading.Thread(target=clear_expired_cache, daemon=True).start()
 
 # ---------------- WEATHER ----------------
+from datetime import datetime
+import requests
+
 @app.route('/weather')
 def weather():
     def fetch_weather():
         city = "Ho Chi Minh City"
         api_key = OPENWEATHER_KEY
 
-        # 1️⃣ Lấy thông tin thời tiết hiện tại
-        url_current = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric&lang=vi"
+        # 1️⃣ Current Weather
+        url_current = (
+            f"https://api.openweathermap.org/data/2.5/weather"
+            f"?q={city}&appid={api_key}&units=metric&lang=vi"
+        )
         current = requests.get(url_current, timeout=10).json()
 
-        lat, lon = current["coord"]["lat"], current["coord"]["lon"]
+        # Lấy city name an toàn
+        city_name = current.get("name", "Thành phố Hồ Chí Minh")
 
-        # 2️⃣ Lấy dự báo 5 ngày (mỗi 3h)
-        url_forecast = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={api_key}&units=metric&lang=vi"
-        forecast = requests.get(url_forecast, timeout=10).json()
+        lat = current["coord"]["lat"]
+        lon = current["coord"]["lon"]
 
-        # 3️⃣ Lấy chất lượng không khí (AQI)
-        url_air = f"http://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={lon}&appid={api_key}"
+        # 2️⃣ Forecast 5 ngày (3 giờ/lần) – API forecast
+        url_forecast = (
+            f"https://api.openweathermap.org/data/2.5/forecast"
+            f"?lat={lat}&lon={lon}&appid={api_key}&units=metric&lang=vi"
+        )
+        forecast_raw = requests.get(url_forecast, timeout=10).json()
+
+        # 🧠 Chuyển forecast 3h thành forecast theo ngày
+        from collections import defaultdict
+        daily = defaultdict(list)
+
+        for item in forecast_raw["list"]:
+            day = item["dt_txt"].split(" ")[0]
+            daily[day].append(item)
+
+        # Chỉ lấy 6 ngày tới
+        forecast = []
+        for day, items in list(daily.items())[:6]:
+            temps = [i["main"]["temp"] for i in items]
+            max_t = max(temps)
+            min_t = min(temps)
+            icon = items[len(items)//2]["weather"][0]["icon"]
+            desc = items[len(items)//2]["weather"][0]["description"]
+            forecast.append({
+                "date": day,
+                "icon": icon,
+                "description": desc,
+                "temp_max": max_t,
+                "temp_min": min_t
+            })
+
+        # 3️⃣ Air quality
+        url_air = (
+            f"http://api.openweathermap.org/data/2.5/air_pollution"
+            f"?lat={lat}&lon={lon}&appid={api_key}"
+        )
         air = requests.get(url_air, timeout=10).json()
 
-        return {"current": current, "forecast": forecast, "air": air}
+        return {
+            "city": city_name,
+            "current": current,
+            "forecast": forecast,
+            "air": air
+        }
 
     data = get_cached_data("weather_full", fetch_weather)
     return render_template("weather.html", data=data)
-
-# ---------------- GOLD ----------------
-@app.route('/gold')
-def gold():
-    def fetch_gold():
-        return {"price_vnd": 7800000, "price_usd": 2400}
-    data = get_cached_data("gold", fetch_gold)
-    return render_template('gold.html', price_vnd=data["price_vnd"], price_usd=data["price_usd"])
-
-# ---------------- CRYPTO ----------------
-@app.route('/crypto')
-def crypto():
-    return render_template('crypto.html')
-
-# ---------------- STOCK ----------------
-@app.route('/stock')
-def stock():
-    def fetch_stock():
-        api_url = "https://trading-signals-pi.vercel.app/getPotentialSymbols"
-        return requests.get(api_url, timeout=10).json()
-    data = get_cached_data("stock", fetch_stock)
-    symbols = data.get("data", [])
-    updated = data.get("latest_updated", "")
-    return render_template('stock.html', symbols=symbols, updated=updated)
 
 # ---------------- NEWS (VnExpress) ----------------
 def parse_rss_items(content, limit=10):
@@ -133,6 +154,112 @@ def news_json():
 def news():
     # page sẽ fetch /news_json client-side (để có spinner)
     return render_template('news.html')
+
+@app.route('/market')
+def market():
+    import yfinance as yf, requests
+
+    def fetch_market():
+        tickers = {
+            # Forex
+            "DXY": "DX-Y.NYB",
+            "EURUSD": "EURUSD=X",
+            "USDJPY": "JPY=X",
+            "USDCHF": "CHF=X",
+            "GBPUSD": "GBPUSD=X",
+            "AUDUSD": "AUDUSD=X",
+            "USDVND": "USDVND=X",
+
+            # Stock index
+            "VNINDEX": "^VNINDEX.VN",
+            "DJIA": "^DJI",
+            "NASDAQ": "^IXIC",
+            "S&P500": "^GSPC",
+            "KOSPI": "^KS11",
+            "NIKKEI": "^N225",
+            "SHANGHAI": "000001.SS",
+
+            # Commodity
+            "Gold": "GC=F",
+            "Silver": "SI=F",
+            "Brent": "BZ=F",
+            "Crude": "CL=F",
+
+            # Crypto
+            "BTCUSDT": "BTC-USD",
+            "ETHUSDT": "ETH-USD",
+            "XRPUSDT": "XRP-USD",
+            "BNBUSDT": "BNB-USD"
+        }
+
+        try:
+            data = yf.download(list(tickers.values()), period="2d", interval="1h", progress=False, group_by='ticker')
+        except Exception as e:
+            print(f"⚠️ Lỗi tải dữ liệu yfinance: {e}")
+            data = {}
+
+        forex, stock, commodity, crypto = {}, {}, {}, {}
+
+        for name, symbol in tickers.items():
+            try:
+                closes = data[symbol]["Close"].dropna()
+                if len(closes) < 2:
+                    continue
+                current = closes.iloc[-1]
+                prev = closes.iloc[-2]
+                change = "▲" if current > prev else "▼"
+                change_pct = round(((current - prev) / prev) * 100, 2)
+                info = {"price": round(float(current), 2), "change": change, "percent": change_pct}
+                if name in ["DXY","EURUSD","USDJPY","USDCHF","GBPUSD","AUDUSD","USDVND"]:
+                    forex[name] = info
+                elif name in ["VNINDEX","DJIA","NASDAQ","S&P500","KOSPI","NIKKEI","SHANGHAI"]:
+                    stock[name] = info
+                elif name in ["Gold","Silver","Brent","Crude"]:
+                    commodity[name] = info
+                else:
+                    crypto[name] = info
+            except Exception as e:
+                print(f"⚠️ Lỗi lấy {name}: {e}")
+
+        # VNINDEX fallback
+        if "VNINDEX" not in stock:
+            try:
+                vn = yf.Ticker("^VNINDEX.VN").history(period="2d")
+                if not vn.empty:
+                    current = vn["Close"].iloc[-1]
+                    prev = vn["Close"].iloc[-2]
+                    change = "▲" if current > prev else "▼"
+                    change_pct = round(((current - prev) / prev) * 100, 2)
+                    stock["VNINDEX"] = {"price": round(float(current), 2), "change": change, "percent": change_pct}
+            except Exception as e:
+                print("⚠️ Không thể lấy VNINDEX:", e)
+
+        # Cổ phiếu tiềm năng
+        def fetch_stock():
+            api_url = "https://trading-signals-pi.vercel.app/getPotentialSymbols"
+            try:
+                resp = requests.get(api_url, timeout=10).json()
+                return resp
+            except Exception as e:
+                print("⚠️ Lỗi API cổ phiếu:", e)
+                return {"data": [], "latest_updated": ""}
+
+        stock_api = get_cached_data("stock_potential", fetch_stock)
+        symbols = stock_api.get("data", [])
+        print(symbols)
+        updated = stock_api.get("latest_updated", "")
+
+        return {
+            "forex": forex,
+            "stock": stock,
+            "crypto": crypto,
+            "commodity": commodity,
+            "symbols": symbols,
+            "updated": updated
+        }
+
+    data = get_cached_data("market_data", fetch_market)
+    return render_template("market.html", data=data)
 
 # ---------------- FINANCE (Dow Jones RSS) ----------------
 @app.route('/finance_json')

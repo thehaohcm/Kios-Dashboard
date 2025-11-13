@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <title>Thời tiết Sài Gòn</title>
   <link rel="stylesheet" href="/static/style.css">
+
   <style>
     body {
       background-color: #0f172a;
@@ -11,11 +12,14 @@
       font-family: 'Inter', sans-serif;
       margin: 0;
       padding: 0;
+      /* height: 100vh;
+      overflow: hidden; */
       display: flex;
       flex-direction: column;
       align-items: center;
       height: 100vh;
       overflow: hidden;
+
     }
 
     header.topbar {
@@ -25,180 +29,237 @@
       align-items: center;
       padding: 0.6rem 1rem;
       background-color: #1e293b;
-      font-weight: bold;
+      font-weight: 600;
       color: #facc15;
       font-size: 1.1rem;
-      box-sizing: border-box;
+    }
+
+    /* === CONTAINER TO CENTER THE WHOLE CONTENT === */
+    .page-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     }
 
     .weather-container {
+      width: 90%;
+      max-width: 950px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      flex: 1;
-      width: 100%;
-      padding: 1.5rem;
-      box-sizing: border-box;
-      text-align: center;
+      gap: 2rem;
+      margin-top: -2rem;
     }
 
-    .current-weather {
+    /* MAIN TEMP CARD */
+    .main-card {
       background: #1e293b;
-      border-radius: 12px;
-      padding: 1.5rem;
-      width: 90%;
-      max-width: 800px;
+      padding: 2rem 1.5rem;
+      border-radius: 16px;
+      text-align: center;
       box-shadow: 0 0 12px rgba(0,0,0,0.3);
-      margin-bottom: 1.5rem;
+    }
+
+    .city {
+      font-size: 1.6rem;
+      font-weight: 600;
+      margin-bottom: .3rem;
+    }
+
+    .desc {
+      opacity: .85;
+      font-size: 1.2rem;
+      margin-bottom: .8rem;
     }
 
     .temp {
       font-size: 5rem;
       font-weight: 700;
-      margin: 0.3rem 0;
+      margin: .2rem 0 .4rem 0;
     }
 
-    .details {
+    .feels {
+      opacity: .8;
+      font-size: 1rem;
+    }
+
+    /* GRID 3x2 */
+    .info-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 0.8rem;
-      margin-top: 1rem;
-    }
-
-    .details div {
-      background: #0f172a;
-      border-radius: 8px;
-      padding: 0.6rem;
-      font-size: 0.9rem;
-      line-height: 1.3;
-    }
-
-    h3 {
-      margin: 1rem 0 0.6rem;
-      font-size: 1.3rem;
-      color: #facc15;
-    }
-
-    .forecast-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      grid-template-columns: repeat(3,1fr);
       gap: 1rem;
-      width: 90%;
-      max-width: 800px;
+    }
+
+    .info-card {
+      background: #1e293b;
+      border-radius: 14px;
+      padding: .8rem;
+      text-align: center;
+    }
+
+    .info-card span { font-size: .9rem; opacity: .75; }
+    .info-card strong { font-size: 1.1rem; }
+
+    /* Forecast 6-day layout */
+    .forecast-section {
+      width: 100%;
+      text-align: center;
+    }
+
+    .forecast-section h3 {
+      color: #facc15;
+      margin-bottom: 1rem;
+      font-size: 1.35rem;
+    }
+
+    .forecast-row {
+      display: flex;
       justify-content: center;
+      gap: 1.2rem;
+      margin-bottom: 1.2rem;
     }
 
     .forecast-card {
+      width: 150px;
       background: #1e293b;
-      border-radius: 10px;
-      padding: 0.8rem;
+      border-radius: 14px;
+      padding: 1rem;
       text-align: center;
-      box-shadow: 0 0 8px rgba(0,0,0,0.25);
-      transition: transform 0.2s ease;
-    }
-
-    .forecast-card:hover {
-      transform: scale(1.05);
+      box-shadow: 0 0 10px rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.05); /* 👈 viền mỏng giống mẫu */
     }
 
     .forecast-card img {
-      width: 60px;
-      height: 60px;
+      width: 55px;
+      height: 55px;
+      margin: .5rem 0;
     }
 
-    @media (orientation: landscape) {
-      .temp { font-size: 4rem; }
-      .forecast-grid {
-        grid-template-columns: repeat(5, 1fr);
-      }
+    .forecast-card .date {
+      font-size: .95rem;
+      font-weight: 600;
+      margin-bottom: .4rem;
     }
+
+    .forecast-card .desc {
+      opacity: .85;
+      margin-bottom: .4rem;
+      font-size: .85rem;
+    }
+
+    .forecast-card .temp-range {
+      font-weight: 600;
+      font-size: .9rem;
+    }
+
+
   </style>
+
 </head>
 
 <body class="slide-page">
   <header class="topbar">
-    <div class="brand">🌤 Thời tiết Sài Gòn</div>
-    <div class="datetime" id="clock">--:--:--</div>
+    <div>🌤 Thời tiết Sài Gòn</div>
+    <div id="clock">--:--:--</div>
   </header>
 
-  <div class="weather-container">
-    <div class="current-weather">
-      <h2>{{ data["name"] }}</h2>
-      <p>{{ data["weather"][0]["description"] | capitalize }}</p>
-      <h1 class="temp">{{ data["main"]["temp"] }}°C</h1>
-      <p>Cảm giác như: {{ data["main"]["feels_like"] }}°</p>
+  <div class="page-wrapper">
+    <div class="weather-container">
 
-      <div class="details">
-        <div>🌅 Bình minh<br>{{ data["sys"]["sunrise"] | datetimeformat }}</div>
-        <div>🌇 Hoàng hôn<br>{{ data["sys"]["sunset"] | datetimeformat }}</div>
-        <div>💨 Gió<br>{{ data["wind"]["speed"] }} m/s</div>
-        <div>💧 Độ ẩm<br>{{ data["main"]["humidity"] }}%</div>
-        <div>🌡 Áp suất<br>{{ data["main"]["pressure"] }} hPa</div>
-        <div>👁‍🗨 Tầm nhìn<br>{{ data["visibility"]/1000 }} km</div>
+      <!-- MAIN CARD -->
+      <div class="main-card">
+        <div class="city">{{ data["city"] }}</div>
+        <div class="desc">{{ data["current"]["weather"][0]["description"] | capitalize }}</div>
+        <div class="temp">{{ data["current"]["main"]["temp"] }}°C</div>
+        <div class="feels">Cảm giác như: {{ data["current"]["main"]["feels_like"] }}°</div>
       </div>
-    </div>
 
-    <h3>Dự báo 7 ngày tới</h3>
-    <div class="forecast-grid">
-      {% for day in fc["daily"][:7] %}
-      <div class="forecast-card">
-        <div>{{ day.dt | datetimeformat("%d-%m") }}</div>
-        <img src="http://openweathermap.org/img/wn/{{ day.weather[0].icon }}@2x.png">
-        <div>{{ day.weather[0].description }}</div>
-        <div>{{ day.temp.max }}° / {{ day.temp.min }}°</div>
+      <!-- INFO GRID -->
+      <div class="info-grid">
+        <div class="info-card">
+          <span>💨 Gió</span>
+          <strong>{{ data["current"]["wind"]["speed"] }} m/s</strong>
+        </div>
+
+        <div class="info-card">
+          <span>💧 Độ ẩm</span>
+          <strong>{{ data["current"]["main"]["humidity"] }}%</strong>
+        </div>
+
+        <div class="info-card">
+          <span>🌡 Áp suất</span>
+          <strong>{{ data["current"]["main"]["pressure"] }} hPa</strong>
+        </div>
+
+        <div class="info-card">
+          <span>🌅 Bình minh</span>
+          <strong>{{ data["current"]["sys"]["sunrise"] | datetimeformat }}</strong>
+        </div>
+
+        <div class="info-card">
+          <span>🌇 Hoàng hôn</span>
+          <strong>{{ data["current"]["sys"]["sunset"] | datetimeformat }}</strong>
+        </div>
+
+        <div class="info-card">
+          <span>👁 Tầm nhìn</span>
+          <strong>{{ data["current"]["visibility"]/1000 }} km</strong>
+        </div>
       </div>
-      {% endfor %}
+
+      <!-- FORECAST -->
+      <div class="forecast-section">
+        <h3>Dự báo 6 ngày tới</h3>
+
+        <div class="forecast-row">
+          {% for f in data["forecast"][:3] %}
+          <div class="forecast-card">
+            <div class="date">{{ f.date.split('-')[2] }}/{{ f.date.split('-')[1] }}</div>
+            <img src="https://openweathermap.org/img/wn/{{ f.icon }}@2x.png">
+            <div class="desc">{{ f.description }}</div>
+            <div class="temp-range">{{ f.temp_max }}° / {{ f.temp_min }}°</div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="forecast-row">
+          {% for f in data["forecast"][3:6] %}
+          <div class="forecast-card">
+            <div class="date">{{ f.date.split('-')[2] }}/{{ f.date.split('-')[1] }}</div>
+            <img src="https://openweathermap.org/img/wn/{{ f.icon }}@2x.png">
+            <div class="desc">{{ f.description }}</div>
+            <div class="temp-range">{{ f.temp_max }}° / {{ f.temp_min }}°</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
     </div>
   </div>
 
   <script>
-    // 🔁 Auto chuyển trang sau 2 phút
-    const pages = ["/weather", "/gold", "/crypto", "/stock", "/news", "/finance"];
+    /* Auto rotate pages */
+    const pages = ["/weather", "/news", "/market", "/finance"];
     let idx = pages.indexOf(window.location.pathname);
-    if (idx === -1) idx = 0;
+    if (idx < 0) idx = 0;
     setInterval(() => {
       idx = (idx + 1) % pages.length;
       window.location.href = pages[idx];
     }, 120000);
 
-    // 🌙 Hiệu ứng slide khi rời trang
-    document.body.classList.add("slide-page");
-    document.body.style.transition = "transform 0.7s ease-in-out, opacity 0.7s ease-in-out";
-    document.body.style.transform = "translateX(0)";
-    document.body.style.opacity = "1";
-    window.addEventListener("beforeunload", () => {
-      document.body.style.transform = "translateX(-50px)";
-      document.body.style.opacity = "0";
-    });
-
-    // 🕒 Đồng hồ realtime
+    /* Clock */
     function updateClock() {
       const now = new Date();
       const opts = { timeZone: 'Asia/Ho_Chi_Minh', hour12: false,
-                    year: 'numeric', month: '2-digit', day: '2-digit',
-                    hour: '2-digit', minute: '2-digit', second: '2-digit' };
-      const clock = document.getElementById('clock');
-      if (clock) clock.textContent = new Intl.DateTimeFormat('vi-VN', opts).format(now);
+        year:'numeric',month:'2-digit',day:'2-digit',
+        hour:'2-digit',minute:'2-digit',second:'2-digit'
+      };
+      document.getElementById("clock").textContent =
+        new Intl.DateTimeFormat('vi-VN', opts).format(now);
     }
     updateClock();
     setInterval(updateClock, 1000);
-
-    /* ======= Preload weather icons ======= */
-    (function preloadImages() {
-      const imgs = [
-        "http://openweathermap.org/img/wn/01d@2x.png",
-        "http://openweathermap.org/img/wn/02d@2x.png",
-        "http://openweathermap.org/img/wn/03d@2x.png",
-        "http://openweathermap.org/img/wn/04d@2x.png",
-        "http://openweathermap.org/img/wn/09d@2x.png",
-        "http://openweathermap.org/img/wn/10d@2x.png",
-        "/static/img/weather/clear.png",
-        "/static/img/weather/cloud.png",
-        "/static/img/weather/rain.png"
-      ];
-      imgs.forEach(url => { const i = new Image(); i.src = url; });
-    })();
   </script>
 </body>
 </html>

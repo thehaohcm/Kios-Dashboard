@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Forex - Stock - Crypto - Commodity</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(30,41,59,0.95);
+      --text: #f1f5f9;
+      --accent: #facc15;
+      --up: #22c55e;
+      --down: #ef4444;
+      --radius: 16px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Header */
+    header.topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 50px;
+      background: rgba(30,41,59,0.95);
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 1.05rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+
+    .container {
+      /*margin-top: 60px;  giảm khoảng trống dư */
+      width: 92%;
+      max-width: 1600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.8rem;
+    }
+
+    /* Grid section */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.8rem;
+      width: 100%;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 1rem 1.4rem 1.2rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.35);
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    h3 {
+      margin: 0 0 0.7rem;
+      color: var(--accent);
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding-bottom: 0.3rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+    }
+
+    td {
+      padding: 6px 8px;
+      font-size: 0.95rem;
+    }
+
+    td:first-child {
+      text-align: left;
+      width: 60%;
+      font-weight: 500;
+      color: #f8fafc;
+    }
+
+    td:last-child {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .up { color: var(--up); }
+    .down { color: var(--down); }
+
+    /* VNINDEX Box */
+    .vnindex-box {
+      width: 100%;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: 0 0 12px rgba(0,0,0,0.45);
+      padding: 1.2rem 2rem;
+      text-align: center;
+    }
+
+    .vnindex-box h2 {
+      margin: 0;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+    }
+
+    .vnindex-value {
+      font-size: 3.4rem;
+      font-weight: 700;
+      margin-top: 0.4rem;
+    }
+
+    .vnindex-change {
+      font-size: 1.2rem;
+      margin-top: 0.3rem;
+    }
+
+    /* Stock list */
+    .stock-list {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      width: 100%;
+      padding: 1.2rem 1.5rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.35);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stock-list h3 {
+      text-align: center;
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+    }
+
+    .stock-list table {
+      width: 100%;
+      border-collapse: collapse;
+      max-width: 900px; /* Giữ bảng nằm giữa */
+    }
+
+    .stock-list th, .stock-list td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #334155;
+      font-size: 0.95rem;
+    }
+
+    .stock-list th {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .stock-list th:first-child { text-align: left; } /* chỉnh “Mã” sang trái */
+    .stock-list td:first-child { text-align: left; }
+
+    .stock-list td:not(:first-child), .stock-list th:not(:first-child) {
+      text-align: center;
+    }
+
+    @media (max-width: 1200px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+      .container { width: 96%; }
+      .vnindex-value { font-size: 2.4rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">📊 Forex - Stock - Crypto - Commodity</div>
+    <div class="datetime" id="clock">--:--:--</div>
+  </header>
+
+  <div class="container">
+    <!-- 4 bảng -->
+    <div class="grid">
+      <div class="card">
+        <h3>🌍 Forex</h3>
+        <table>
+          {% for k,v in data.forex.items() %}
+          <tr>
+            <td>{{ k }}</td>
+            <td class="{{ 'up' if v.change=='▲' else 'down' }}">{{ v.price }} {{ v.change }} ({{ v.percent }}%)</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>📈 Stock</h3>
+        <table>
+          {% for k,v in data.stock.items() %}
+          <tr>
+            <td>{{ k }}</td>
+            <td class="{{ 'up' if v.change=='▲' else 'down' }}">{{ v.price }} {{ v.change }} ({{ v.percent }}%)</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>💰 Crypto</h3>
+        <table>
+          {% for k,v in data.crypto.items() %}
+          <tr>
+            <td>{{ k }}</td>
+            <td class="{{ 'up' if v.change=='▲' else 'down' }}">{{ v.price }} {{ v.change }} ({{ v.percent }}%)</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>🏗️ Commodity</h3>
+        <table>
+          {% for k,v in data.commodity.items() %}
+          <tr>
+            <td>{{ k }}</td>
+            <td class="{{ 'up' if v.change=='▲' else 'down' }}">{{ v.price }} {{ v.change }} ({{ v.percent }}%)</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <!-- VNINDEX -->
+    {% if data.stock.VNINDEX %}
+    <div class="vnindex-box">
+      <h2>🇻🇳 VNINDEX</h2>
+      <div class="vnindex-value">{{ data.stock.VNINDEX.price }}</div>
+      <div class="vnindex-change {{ 'up' if data.stock.VNINDEX.change=='▲' else 'down' }}">
+        {{ data.stock.VNINDEX.change }} {{ data.stock.VNINDEX.percent }}%
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Cổ phiếu tiềm năng -->
+    <div class="stock-list">
+      <h3>🔥 Cổ phiếu tiềm năng</h3>
+      <table>
+        <tr><th>Mã</th><th>Giá cao nhất</th><th>Giá thấp nhất</th></tr>
+        {% for s in data.symbols %}
+        <tr>
+          <td>{{ s.symbol }}</td>
+          <td>{{ s.highest_price }}</td>
+          <td>{{ s.lowest_price }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      <p style="color:#9ca3af;font-size:0.9rem;text-align:right;margin-top:0.5rem;">
+        Cập nhật: {{ data.updated }}
+      </p>
+    </div>
+  </div>
+
+  <script>
+    function updateClock() {
+      const now = new Date();
+      const opts = { timeZone: 'Asia/Ho_Chi_Minh', hour12: false,
+                     year: 'numeric', month: '2-digit', day: '2-digit',
+                     hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      document.getElementById('clock').textContent =
+        new Intl.DateTimeFormat('vi-VN', opts).format(now);
+    }
+    updateClock(); setInterval(updateClock, 1000);
+  </script>
+</body>
+</html>
