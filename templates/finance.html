@@ -30,6 +30,15 @@ async function loadFinance(){
   finally{ sk.style.display='none'; list.style.display='block'; }
 }
 loadFinance(); function updateClock(){const now=new Date();const opts={timeZone:'Asia/Ho_Chi_Minh',hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'};document.getElementById('clock').textContent=new Intl.DateTimeFormat('vi-VN',opts).format(now);}updateClock();setInterval(updateClock,1000);
+
+// Auto-switch pages
+const pages = ['/weather','/news','/market','/finance'];
+let idx = pages.indexOf(window.location.pathname);
+if(idx===-1) idx = 0;
+setInterval(()=>{
+  idx = (idx+1)%pages.length;
+  window.location.href = pages[idx];
+}, 120000);
 </script>
 </body>
 </html>
